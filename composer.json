@@ -1,0 +1,51 @@
+{
+    "name": "juleica-php/client",
+    "description": "Framework-agnostic PHP client for the JuLeiCa (Jugendleiter/in-Card) validity API.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["juleica", "jugendleiter", "api", "client", "sport", "ehrenamt"],
+    "homepage": "https://github.com/TobyMaxham/juleica-php",
+    "authors": [
+        {
+            "name": "Toby Maxham",
+            "homepage": "https://github.com/TobyMaxham",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "psr/http-client": "^1.0",
+        "psr/http-client-implementation": "^1.0",
+        "psr/http-factory": "^1.0",
+        "psr/http-factory-implementation": "^1.0",
+        "psr/http-message": "^1.0 || ^2.0",
+        "php-http/discovery": "^1.19"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6 || ^10.0 || ^11.0",
+        "guzzlehttp/guzzle": "^7.0",
+        "guzzlehttp/psr7": "^2.0",
+        "friendsofphp/php-cs-fixer": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "JuleicaPhp\\Juleica\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "JuleicaPhp\\Juleica\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "cs-fix": "php-cs-fixer fix"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    }
+}
