@@ -15,6 +15,9 @@ use JuleicaPhp\Juleica\DTO\JuleicaCardStatus;
 use JuleicaPhp\Juleica\Exceptions\JuleicaApiException;
 use JuleicaPhp\Juleica\Exceptions\JuleicaAuthenticationException;
 use JuleicaPhp\Juleica\Exceptions\JuleicaRateLimitException;
+use JuleicaPhp\Juleica\Http\CurlClient;
+use JuleicaPhp\Juleica\Http\CurlHttpFactory;
+use Throwable;
 
 final class JuleicaClient
 {
@@ -27,10 +30,13 @@ final class JuleicaClient
     /**
      * @param string $token Bearer token issued by the Juleica team (juleica@farbcode.net).
      * @param string $baseUri Override for testing against a different host.
-     * @param ClientInterface|null $httpClient A PSR-18 HTTP client. If omitted, one is auto-discovered
-     *        via php-http/discovery from whatever is already installed in the consuming project
-     *        (Guzzle, Symfony HttpClient, curl, etc.) — this package does not force a specific client.
-     * @param RequestFactoryInterface|null $requestFactory A PSR-17 request factory. Auto-discovered if omitted.
+     * @param ClientInterface|null $httpClient A PSR-18 HTTP client. If omitted, an already-installed
+     *        client is used automatically when detectable via php-http/discovery (Guzzle, Symfony
+     *        HttpClient, etc.); otherwise the built-in curl-based CurlClient is used, requiring only
+     *        ext-curl — no additional package is ever required. Pass your own PSR-18 client to
+     *        override this behavior.
+     * @param RequestFactoryInterface|null $requestFactory A PSR-17 request factory. Same auto-detection
+     *        as $httpClient, falling back to the built-in CurlHttpFactory if omitted.
      */
     public function __construct(
         private readonly string $token,
@@ -38,8 +44,43 @@ final class JuleicaClient
         ?ClientInterface $httpClient = null,
         ?RequestFactoryInterface $requestFactory = null,
     ) {
-        $this->httpClient = $httpClient ?? Psr18ClientDiscovery::find();
-        $this->requestFactory = $requestFactory ?? Psr17FactoryDiscovery::findRequestFactory();
+        $this->httpClient = $httpClient ?? self::discoverHttpClient();
+        $this->requestFactory = $requestFactory ?? self::discoverRequestFactory();
+    }
+
+    /**
+     * Prefers a PSR-18 client already installed in the consuming project (found via the optional
+     * php-http/discovery package), falling back to the built-in zero-dependency CurlClient.
+     * php-http/discovery is never required for this package to work — it is only used
+     * opportunistically when already present in the dependency tree.
+     */
+    private static function discoverHttpClient(): ClientInterface
+    {
+        if (class_exists(Psr18ClientDiscovery::class)) {
+            try {
+                return Psr18ClientDiscovery::find();
+            } catch (Throwable) {
+                // No PSR-18 client could be discovered; fall through to the curl-based default.
+            }
+        }
+
+        return new CurlClient();
+    }
+
+    /**
+     * @see discoverHttpClient()
+     */
+    private static function discoverRequestFactory(): RequestFactoryInterface
+    {
+        if (class_exists(Psr17FactoryDiscovery::class)) {
+            try {
+                return Psr17FactoryDiscovery::findRequestFactory();
+            } catch (Throwable) {
+                // No PSR-17 request factory could be discovered; fall through to the curl-based default.
+            }
+        }
+
+        return new CurlHttpFactory();
     }
 
     /**
