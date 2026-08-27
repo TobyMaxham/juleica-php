@@ -1,6 +1,19 @@
 # juleica-php/client
 
+[![Tests](https://github.com/TobyMaxham/juleica-php/actions/workflows/tests.yml/badge.svg)](https://github.com/TobyMaxham/juleica-php/actions/workflows/tests.yml)
+[![Latest Stable Version](http://poser.pugx.org/juleica-php/client/v)](https://packagist.org/packages/juleica-php/client)
+[![PHP Version Require](http://poser.pugx.org/juleica-php/client/require/php)](https://packagist.org/packages/juleica-php/client)
+[![License](http://poser.pugx.org/juleica-php/client/license)](https://packagist.org/packages/juleica-php/client)
+
 Ein schlanker, framework-agnostischer PHP-Client für die [Juleica](https://juleica.de/entwickler)-API zur Prüfung der Gültigkeit einer Jugendleiter/in-Card (Juleica).
+
+> **Hinweis:** Dieses Package ist **kein offizielles Angebot von juleica.de** oder den dahinterstehenden Trägerorganisationen. Es bindet lediglich die öffentlich dokumentierte Juleica-API an und wird unabhängig davon gepflegt.
+>
+> Die Juleica (Jugendleiter/in-Card) ist ein bundesweit einheitlicher Ausweis für ehrenamtliche Jugendleiter*innen in Deutschland. Sie dient als Qualifikationsnachweis und zur Legitimation gegenüber Erziehungsberechtigten, Behörden und anderen Stellen, verbunden mit diversen Vergünstigungen für ehrenamtlich Engagierte.
+>
+> Da API-Endpunkt und -Dokumentation von juleica.de betrieben und gepflegt werden (nicht von diesem Package), können sie sich unabhängig von diesem Package ändern. Für aktuelle, offizielle Informationen:
+> - Entwicklerseite: <https://juleica.de/entwickler>
+> - API-Dokumentation: <https://documenter.gw.postman.com/api/collections/18297363/UVC6h67q>
 
 ## Installation
 
@@ -8,13 +21,16 @@ Ein schlanker, framework-agnostischer PHP-Client für die [Juleica](https://jule
 composer require juleica-php/client
 ```
 
-Benötigt PHP `>=8.1`. Du brauchst außerdem ein Bearer-Token, das dir das Juleica-Team ausstellt (Kontakt: juleica@farbcode.net).
+Benötigt PHP `>=8.1`. Du brauchst außerdem ein Bearer-Token, das dir das Juleica-Team ausstellt (Kontakt: [siehe Juleica Website](https://juleica.de/entwickler)).
 
-**Wichtig:** Dieses Package schreibt bewusst keine konkrete HTTP-Client-Implementierung vor (kein hartes `require` auf Guzzle o. ä.), um Versionskonflikte in deinem Projekt zu vermeiden. Es verlangt nur PSR-18/PSR-17-Interfaces und nutzt [`php-http/discovery`](https://github.com/php-http/discovery), um zur Laufzeit automatisch zu erkennen, welcher HTTP-Client in deinem Projekt bereits installiert ist (Guzzle, Symfony HttpClient, curl-basierte Clients, …). Hast du noch keinen PSR-18-Client im Projekt, reicht es, einen zu installieren, z. B.:
+**Zero-Dependency-Prinzip:** Dieses Package benötigt **keinen zusätzlichen HTTP-Client als Composer-Abhängigkeit**.
+Ist die PHP-`curl`-Extension aktiviert (bei den allermeisten PHP-Installationen und Hosting-Umgebungen standardmäßig der Fall),
+funktioniert das Package sofort nach `composer require` — ganz ohne Guzzle, Symfony HttpClient oder sonstige zusätzliche Pakete.
 
-```bash
-composer require guzzlehttp/guzzle
-```
+Nutzt dein Projekt bereits einen PSR-18-HTTP-Client (Guzzle, Symfony HttpClient, o. ä.), wird dieser automatisch erkannt und
+bevorzugt verwendet — praktisch, wenn du z. B. schon eine zentrale HTTP-Client-Konfiguration (Timeouts, Middleware, Logging)
+im Projekt hast. Nötig ist das aber nicht: ohne einen erkannten Client greift das Package auf einen intern mitgelieferten,
+schlanken curl-basierten Client zurück.
 
 ## Verwendung
 
@@ -63,11 +79,11 @@ if ($result->hasExtension()) {
 
 ### Fehlerbehandlung
 
-| Exception                        | Bedeutung                                      |
-|-----------------------------------|-------------------------------------------------|
-| `JuleicaAuthenticationException`  | Bearer-Token fehlt oder ist ungültig (401/403)  |
-| `JuleicaRateLimitException`       | Rate-Limit erreicht (429), inkl. `limit`/`remaining` |
-| `JuleicaApiException`             | Sonstiger API- oder Netzwerkfehler              |
+| Exception                        | Bedeutung                                            |
+|----------------------------------|------------------------------------------------------|
+| `JuleicaAuthenticationException` | Bearer-Token fehlt oder ist ungültig (401/403)       |
+| `JuleicaRateLimitException`      | Rate-Limit erreicht (429), inkl. `limit`/`remaining` |
+| `JuleicaApiException`            | Sonstiger API- oder Netzwerkfehler                   |
 
 ```php
 use JuleicaPhp\Juleica\Exceptions\JuleicaRateLimitException;
@@ -81,7 +97,10 @@ try {
 
 ### Eigenen HTTP-Client verwenden
 
-Standardmäßig wird der HTTP-Client automatisch erkannt (siehe oben). Für Tests, eigene Konfiguration (Proxy, Logging-Middleware, Timeouts) oder um die Auto-Discovery zu umgehen, können ein eigener PSR-18-Client und/oder eine PSR-17-Request-Factory übergeben werden:
+Standardmäßig wird automatisch der beste verfügbare Client verwendet — ein bereits im Projekt vorhandener PSR-18-Client
+(falls vorhanden) oder sonst der eingebaute curl-Fallback (siehe oben). Für Tests, eigene Konfiguration (Proxy,
+Logging-Middleware, Timeouts) oder um dieses Verhalten zu übersteuern, können ein eigener PSR-18-Client und/oder
+eine PSR-17-Request-Factory explizit übergeben werden:
 
 ```php
 $client = new JuleicaClient(
